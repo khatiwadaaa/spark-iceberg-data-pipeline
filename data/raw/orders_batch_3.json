@@ -1,0 +1,3 @@
+{"order_id":"o-1001","customer_id":"c-01","status":"paid","amount":49.99,"updated_at":"2026-10-21T10:00:00","payment_method":"credit_card"}
+{"order_id":"o-1004","customer_id":"c-04","status":"paid","amount":70.0,"updated_at":"2026-10-21T10:15:00","payment_method":"debit_card"}
+{"order_id":"o-1005","customer_id":"c-05","status":"paid","amount":199.99,"updated_at":"2026-10-21T10:20:00","payment_method":"paypal"}

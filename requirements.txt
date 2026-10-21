@@ -1,0 +1,2 @@
+# Optional local tools. Spark itself runs inside Docker for Phase 1.
+pytest>=8,<10

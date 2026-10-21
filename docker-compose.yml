@@ -1,0 +1,33 @@
+services:
+  spark:
+    image: apache/spark:3.5.5
+    working_dir: /workspace
+    user: root
+    volumes:
+      - ./jobs:/workspace/jobs
+      - ./data:/workspace/data
+      - ./warehouse:/workspace/warehouse
+      - spark-ivy:/tmp/.ivy2
+    environment:
+      HOME: /tmp
+      SPARK_LOCAL_IP: 127.0.0.1
+    entrypoint: ["/opt/spark/bin/spark-submit"]
+    command:
+      - --master
+      - local[2]
+      - --packages
+      - org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.9.2
+      - --conf
+      - spark.jars.ivy=/tmp/.ivy2
+      - --conf
+      - spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
+      - --conf
+      - spark.sql.catalog.local=org.apache.iceberg.spark.SparkCatalog
+      - --conf
+      - spark.sql.catalog.local.type=hadoop
+      - --conf
+      - spark.sql.catalog.local.warehouse=file:///workspace/warehouse
+      - /workspace/jobs/ingest.py
+      - /workspace/data/raw/${BATCH_FILE:-orders_batch_1.json}
+volumes:
+  spark-ivy:
