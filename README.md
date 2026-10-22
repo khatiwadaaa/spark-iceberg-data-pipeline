@@ -1,56 +1,106 @@
-# LakeFlow — Spark + Iceberg + Airflow (building step by step)
+# LakeFlow — Reliable Data Lakehouse Pipeline
 
-Python-based data engineering portfolio project. **Current implemented milestone:** local Spark ingestion into an Iceberg table using deduplicated, timestamp-guarded `MERGE INTO`. All other folders are scaffolded for subsequent milestones.
+**Apache Spark • Apache Iceberg • Apache Airflow • Python • Docker • Pytest**
 
-## Prerequisites
-- Docker Desktop installed and running
-- VS Code (recommended)
-- Network connection for the initial Spark image and Iceberg dependency download
+LakeFlow is a containerized data engineering project that demonstrates reliable batch ingestion into an Apache Iceberg data lakehouse. It processes e-commerce order events with PySpark, supports incremental upserts, handles evolving schemas, preserves historical table snapshots, and uses Apache Airflow for workflow orchestration and failure monitoring.
 
-## Windows PowerShell
-Open a terminal in the **lakeflow** project root.
+The project includes SHA-256-based batch checkpointing, automatic task retries, Discord failure notifications, and automated tests.
 
-```powershell
-docker compose version
-docker compose run --rm spark
-$env:BATCH_FILE='orders_batch_2.json'; docker compose run --rm spark; Remove-Item Env:BATCH_FILE
-docker compose run --rm spark
+## Architecture
+
+```text
+                  E-commerce Order Events
+                         (JSONL)
+                            |
+                            v
+                    Apache Airflow
+                            |
+                 +----------+----------+
+                 |                     |
+          Discover Batches       Validate Data
+                 |                     |
+                 +----------+----------+
+                            |
+                            v
+                     Apache Spark
+                            |
+                  Clean and Deduplicate
+                            |
+                            v
+                   Apache Iceberg
+                     MERGE INTO
+                            |
+               +------------+------------+
+               |            |            |
+          Order Table   Checkpoints   Snapshots
+               |            |            |
+               v            v            v
+           Analytics    Skip Replays   Time Travel
+
+             Airflow Failure Monitoring
+                            |
+                      Discord Alerts
 ```
 
-Or use:
+## Key Features
 
-```powershell
-.\scripts\run-batch.ps1 orders_batch_1.json
-.\scripts\run-batch.ps1 orders_batch_2.json
-.\scripts\run-batch.ps1 orders_batch_1.json
-```
+### 1. PySpark Data Ingestion
 
-The first run should show 3 orders. The second adds a new order and updates an existing one (4 unique orders). Replaying the first batch should retain 4 unique orders without overwriting the newer update. **Logical idempotence** does not guarantee zero new Iceberg metadata/snapshots.
+- Processes e-commerce order events stored as JSON Lines.
+- Validates required fields and rejects negative order amounts.
+- Deduplicates records using Spark window functions.
+- Uses timestamps to select the latest order update.
+- Processes batches into Apache Iceberg tables.
 
-## Linux/macOS
+### 2. Incremental Iceberg Upserts
 
-```bash
-docker compose run --rm spark
-BATCH_FILE=orders_batch_2.json docker compose run --rm spark
-```
+Uses Iceberg's `MERGE INTO` functionality to update existing orders and insert new ones.
 
-## Project layout
+Timestamp-based conditions help prevent older events from overwriting more recent information.
 
-- `jobs/ingest.py`: working Spark JSONL-to-Iceberg MERGE job
-- `data/raw/`: sample batches
-- `warehouse/`: persisted local Iceberg tables (do not commit)
-- `src/`: reusable Python code as we refactor
-- `dags/`: future Airflow workflows
-- `tests/`: future automated tests
-- `scripts/`: convenience launch scripts
-- `docs/`: architecture notes
+### 3. Schema Evolution
 
-## Planned milestones
+Demonstrates adding a `payment_method` column without rebuilding the existing Iceberg table or losing historical records.
 
-1. Validate Spark ingestion and rerun behavior
-2. Add checkpoint records and ingestion tests
-3. Demonstrate Iceberg schema evolution and time travel
-4. Add Airflow DAGs, retries, and alerting
-5. Documentation and portfolio-ready metrics
+### 4. Time-Travel Queries
 
-Not yet executed in this environment: Docker runtime. Docker/engine compatibility and dependency download may need adjustment on your machine.
+Uses Iceberg snapshots to query historical table states.
+
+For example, an order originally recorded as `pending` can be retrieved from an earlier snapshot after its current status changes to `paid`.
+
+### 5. SHA-256 Batch Checkpointing
+
+- Computes a content-based hash for each input batch.
+- Stores completed batch hashes in an Iceberg checkpoint table.
+- Skips batches that have already been successfully recorded.
+- Supports repeatable batch processing.
+
+The checkpoint and order-table commits are separate transactions. Exactly-once processing under concurrent execution or arbitrary failures is not guaranteed.
+
+### 6. Apache Airflow Orchestration
+
+A Python-based Airflow DAG manages the ingestion workflow:
+
+1. Discover JSON input batches.
+2. Validate incoming records.
+3. Execute the Spark ingestion job.
+4. Record task execution and failures.
+
+The DAG includes automatic retries and prevents overlapping DAG runs through `max_active_runs=1`.
+
+### 7. Discord Failure Notifications
+
+Airflow's failure callback sends notifications to a configured Discord webhook when a task reaches a failed state.
+
+Notifications include the DAG ID, task ID, run ID, execution time, and error details.
+
+A simulated task failure was used to verify notification delivery.
+
+## Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| Python | Pipeline and orchestration logic |
+| Apache Spark 3.5.5 | Distributed data processing |
+| Apache Iceberg 1.9.2 | Transactional table format |
+| Apache Airflow 3.
