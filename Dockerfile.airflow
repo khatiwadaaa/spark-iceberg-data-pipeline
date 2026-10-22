@@ -8,7 +8,6 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 USER airflow
-
-RUN pip install --no-cache-dir pyspark==3.5.5
+RUN pip install --no-cache-dir pyspark==3.5.5 pytest
 
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64

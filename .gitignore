@@ -1,11 +1,26 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*passwords*.json
+*webhook*
+!test_discord.py
+
+# Python
 __pycache__/
+*.pyc
 .pytest_cache/
 .venv/
-.env
-warehouse/*
-!warehouse/.gitkeep
-logs/*
-!logs/.gitkeep
-data/processed/*
-!data/processed/.gitkeep
-*.pyc
+
+# Runtime data
+warehouse/
+logs/
+airflow-logs/
+data/processed/
+spark-debug.log
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
