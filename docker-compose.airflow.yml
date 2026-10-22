@@ -1,6 +1,7 @@
+
 services:
   airflow:
-    image: apache/airflow:3.1.0
+    image: lakeflow-airflow-spark
     container_name: lakeflow-airflow
     command: standalone
     ports:
@@ -8,10 +9,14 @@ services:
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      SPARK_LOCAL_HOSTNAME: "localhost"
     volumes:
       - ./dags:/opt/airflow/dags
       - ./airflow-logs:/opt/airflow/logs
       - airflow-data:/opt/airflow
+      - ./jobs:/workspace/jobs:ro
+      - ./data:/workspace/data:ro
+      - ./warehouse:/workspace/warehouse
     restart: unless-stopped
 
 volumes:
